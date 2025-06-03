@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { AWS_CONTENT_SHA256_HEADER, fetchSha256, hashBody, mutateHeaders } from './index'
+import { AWS_CONTENT_SHA256_HEADER, fetchSha256, getBoundaryFromHeaders, hashBody, mutateHeaders } from './index'
 import createFetchMock from 'vitest-fetch-mock';
 
 beforeEach(() => {
@@ -31,7 +31,7 @@ describe('hashBody', () => {
         const body = { key: 'value' }
         const expectedHash = 'e43abcf3375244839c012f9633f95862d232a95b00d5bc7348b3098b9fed7f32'
                 
-        const result = await hashBody(body)
+        const result = await hashBody(body, {})
         
         expect(result).toBe(expectedHash)
     })
@@ -86,7 +86,7 @@ describe('fetchWithSha256Headers', () => {
             url: url,
             body: body.toString(),
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'multipart/form-data; boundary=------------------------boundary'
             }
         }
         
@@ -123,7 +123,7 @@ describe('fetchWithSha256Headers', () => {
             url: url,
             body: body,
             headers: {
-                'Content-Type': 'multipart/form-data'
+                'Content-Type': 'multipart/form-data; boundary=------------------------boundary'
             }
         }
 
@@ -159,7 +159,7 @@ describe('mutateHeaders', () => {
 
     it('should support file via form data', async () => {
         const headers = {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data; boundary=------------------------boundary'
         }
         const body = new FormData()
         body.append('file', new Blob(['file content'], { type: 'text/plain' }), 'file.txt')
@@ -171,5 +171,15 @@ describe('mutateHeaders', () => {
         const result = await mutateHeaders(headers, body)
         
         expect(result[AWS_CONTENT_SHA256_HEADER]).toBe(expectedHash)
+    });
+});
+
+describe('should get boundary from headers', () => {
+    it('should extract boundary from Content-Type header', () => {
+        const headers = {
+            'Content-Type': 'multipart/form-data; boundary=------------------------boundary'
+        };
+        const result = getBoundaryFromHeaders(headers);
+        expect(result).toBe('------------------------boundary');
     });
 });

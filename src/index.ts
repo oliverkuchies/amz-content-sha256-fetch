@@ -5,14 +5,26 @@ import {
 
 export const AWS_CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 
-export async function hashBody(body : unknown) {
+export function getBoundaryFromHeaders(headers: Record<string, unknown>): string | undefined {
+    const contentType = headers['Content-Type'] || headers['content-type'];
+    if (typeof contentType === 'string') {
+        const match = contentType.match(/boundary=(.+)/);
+        return match ? match[1] : undefined;
+    }
+    return undefined;
+}
+
+export async function hashBody(body : unknown, headers: Record<string, unknown>) {
     if (typeof body === 'string') {
         return sha256(body).replace(/\n/g, '')
     }
 
     if (body instanceof FormData && body.has('file') && body.get('file') instanceof File) {
         const file = body.get('file') as File;
-        const boundary = '------------------------boundary';
+        const boundary = getBoundaryFromHeaders(headers);
+        if (!boundary) {
+            throw new Error('Boundary not found in Content-Type header');
+        }
         const bodyBuffer = await buildMultipartBody(file, boundary);
         return sha256Hex(bodyBuffer)
     }
@@ -22,10 +34,10 @@ export async function hashBody(body : unknown) {
     return sha256(bodyAsString);
 }
 
-export async function mutateHeaders(headers: HeadersInit, body: unknown) {
+export async function mutateHeaders(headers: Record<string, unknown>, body: unknown) {
     return {
         ...headers,
-        [AWS_CONTENT_SHA256_HEADER]: await hashBody(body)
+        [AWS_CONTENT_SHA256_HEADER]: await hashBody(body, headers)
     }
 }
 
@@ -64,9 +76,11 @@ export async function fetchSha256(url: string, options: RequestInit = {}) {
         return fetch(url, options)
     }
 
+    const headers = options.headers as Record<string, unknown> | undefined;
+
     const optionsWithHashedHeader = {
         ...options,
-        headers: await mutateHeaders(options.headers ?? {}, options.body)
+        headers: await mutateHeaders(headers ?? {}, options.body)
     }
 
     return fetch(url, optionsWithHashedHeader)
