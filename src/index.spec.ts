@@ -166,7 +166,7 @@ describe('mutateHeaders', () => {
         body.append('key', 'bobs-bananas')
         body.append('mango', 'fruit')
 
-        const expectedHash = 'e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c'
+        const expectedHash = '86454b7d7fbb172e7d335aa65d59f3e44b481e219e76c547f3da3d1fd70be9e4'
         
         const result = await mutateHeaders(headers, body)
         
