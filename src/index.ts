@@ -91,10 +91,12 @@ export async function fetchSha256(url: string, options: RequestInit = {}) {
 
 	const headers = options.headers as Record<string, unknown> | undefined;
 
+	const body = await mutateBody(options.body, generateBoundary());
+
 	const optionsWithHashedHeader = {
 		...options,
-		headers: await mutateHeaders(headers ?? {}, options.body),
-		body: await mutateBody(options.body, generateBoundary()),
+		headers: await mutateHeaders(headers ?? {}, body),
+		body: body,
 	};
 
 	return fetch(url, optionsWithHashedHeader);
