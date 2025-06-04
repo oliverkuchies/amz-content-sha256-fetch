@@ -3,8 +3,8 @@ import createFetchMock from "vitest-fetch-mock";
 
 import {
 	AWS_CONTENT_SHA256_HEADER,
+	createAwsHashForHeader,
 	fetchSha256,
-	hashBody,
 	mutateHeaders,
 } from "./index";
 
@@ -34,13 +34,13 @@ beforeEach(() => {
 	fetchMocker.enableMocks();
 });
 
-describe("hashBody", () => {
+describe("createAwsHashForHeader", () => {
 	it("should hash the body correctly", async () => {
 		const body = { key: "value" };
 		const expectedHash =
 			"e43abcf3375244839c012f9633f95862d232a95b00d5bc7348b3098b9fed7f32";
 
-		const result = await hashBody(body, boundary);
+		const result = await createAwsHashForHeader(body, boundary);
 
 		expect(result).toBe(expectedHash);
 	});
@@ -138,7 +138,7 @@ describe("fetchWithSha256Headers", () => {
 			body: body,
 			headers: {
 				"Content-Type":
-					"multipart/form-data; boundary=------------------------boundary",
+					"multipart/form-data; boundary=------------------------bananas",
 			},
 		};
 

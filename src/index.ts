@@ -6,7 +6,24 @@ export function generateBoundary(): string {
 	return `------------------------${Math.random().toString(36).substring(2, 15)}`;
 }
 
-export async function hashBody(
+export async function mutateBody(
+	body: BodyInit | null | undefined,
+	boundary: string = generateBoundary(),
+): Promise<BodyInit | null | undefined> {
+	if (
+		body instanceof FormData &&
+		body.has("file") &&
+		body.get("file") instanceof File
+	) {
+		const file = body.get("file") as File;
+		const multipart = await buildMultipartBodyForFile(file, boundary);
+		return multipart;
+	}
+
+	return body;
+}
+
+export async function createAwsHashForHeader(
 	body: unknown,
 	boundary: string,
 ): Promise<string> {
@@ -35,7 +52,7 @@ export async function mutateHeaders(
 ) {
 	return {
 		...headers,
-		[AWS_CONTENT_SHA256_HEADER]: await hashBody(body, boundary),
+		[AWS_CONTENT_SHA256_HEADER]: await createAwsHashForHeader(body, boundary),
 	};
 }
 
@@ -77,6 +94,7 @@ export async function fetchSha256(url: string, options: RequestInit = {}) {
 	const optionsWithHashedHeader = {
 		...options,
 		headers: await mutateHeaders(headers ?? {}, options.body),
+		body: await mutateBody(options.body, generateBoundary()),
 	};
 
 	return fetch(url, optionsWithHashedHeader);
