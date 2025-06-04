@@ -1,15 +1,29 @@
-import { sha256 } from "js-sha256";
-
 export const AWS_CONTENT_SHA256_HEADER = "x-amz-content-sha256";
 
 export function generateBoundary(): string {
 	return `------------------------${Math.random().toString(36).substring(2, 15)}`;
 }
 
+type Body = BodyInit | null | undefined | string | Record<string, unknown>;
+
+export async function sha256(data: string): Promise<string> {
+	if (typeof data === "string") {
+		const encoder = new TextEncoder();
+		const dataBuffer = encoder.encode(data);
+		const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
+		const hashArray = Array.from(new Uint8Array(hashBuffer));
+		return hashArray
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+			.replace(/\n/g, "");
+	}
+	throw new Error("Unsupported data type for SHA-256 hashing");
+}
+
 export async function mutateBody(
-	body: BodyInit | null | undefined,
-	boundary: string = generateBoundary(),
-): Promise<BodyInit | null | undefined> {
+	body: Body,
+	boundary: string,
+): Promise<string | Body> {
 	if (
 		body instanceof FormData &&
 		body.has("file") &&
@@ -17,28 +31,35 @@ export async function mutateBody(
 	) {
 		const file = body.get("file") as File;
 		const multipart = await buildMultipartBodyForFile(file, boundary);
-		return multipart;
+		return convertArrayBufferToString(multipart);
 	}
 
 	return body;
 }
 
-export async function createAwsHashForHeader(
-	body: unknown,
-	boundary: string,
+function normalize(str: string) {
+	return str.replace(/\r\n/g, "\n").trim();
+}
+
+export async function convertArrayBufferToString(
+	buffer: ArrayBuffer,
 ): Promise<string> {
-	if (typeof body === "string") {
-		return sha256(body).replace(/\n/g, "");
+	if (typeof buffer === "string") {
+		throw new Error("test");
 	}
 
-	if (
-		body instanceof FormData &&
-		body.has("file") &&
-		body.get("file") instanceof File
-	) {
-		const file = body.get("file") as File;
-		const bodyBuffer = await buildMultipartBodyForFile(file, boundary);
-		return sha256Hex(bodyBuffer);
+	const decoder = new TextDecoder();
+	return normalize(decoder.decode(buffer));
+}
+
+export async function createAwsHashForHeader(body: Body): Promise<string> {
+	if (typeof body === "string") {
+		return sha256(body);
+	}
+
+	if (body instanceof ArrayBuffer) {
+		const convertedBuffer = await convertArrayBufferToString(body);
+		return sha256(convertedBuffer);
 	}
 
 	const bodyAsString = JSON.stringify(body).replace(/\/\n/g, "\n");
@@ -47,16 +68,18 @@ export async function createAwsHashForHeader(
 
 export async function mutateHeaders(
 	headers: Record<string, unknown>,
-	body: unknown,
-	boundary: string = generateBoundary(),
+	body: Body,
 ) {
 	return {
 		...headers,
-		[AWS_CONTENT_SHA256_HEADER]: await createAwsHashForHeader(body, boundary),
+		[AWS_CONTENT_SHA256_HEADER]: await createAwsHashForHeader(body),
 	};
 }
 
-export async function buildMultipartBodyForFile(file: File, boundary: string) {
+export async function buildMultipartBodyForFile(
+	file: File,
+	boundary: string,
+): Promise<ArrayBuffer> {
 	const preamble = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${file.name}"\r\nContent-Type: application/octet-stream\r\n\r\n`;
 
 	const postamble = `\r\n--${boundary}--\r\n`;
@@ -84,20 +107,24 @@ async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
 	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function fetchSha256(url: string, options: RequestInit = {}) {
+export async function fetchSha256(
+	url: string,
+	options: RequestInit = {},
+	boundary = generateBoundary(),
+) {
 	if (options.body === undefined) {
 		return fetch(url, options);
 	}
 
 	const headers = options.headers as Record<string, unknown> | undefined;
 
-	const body = await mutateBody(options.body, generateBoundary());
+	const body = await mutateBody(options.body, boundary);
 
 	const optionsWithHashedHeader = {
 		...options,
 		headers: await mutateHeaders(headers ?? {}, body),
 		body: body,
-	};
+	} as RequestInit;
 
 	return fetch(url, optionsWithHashedHeader);
 }

@@ -1,7 +1,10 @@
 # amz-content-sha256
 Fetch with automatically embedded amz-content-sha256 header to comply with AWS CloudFront requirements when enabling OAC.
 
-Supports Apollo GraphQL Client and standard fetch requests
+Supports:
+- File Requests
+- Apollo GraphQL Requests
+- Standard Fetch Requests
 
 How to use:
 
@@ -23,12 +26,12 @@ const options = {
 await fetchSha256(options)
 ```
 
-If you wish to use the hash function without the fetch, you can use the `hashBody` function:
+If you wish to use the hash function without the fetch, you can use the `mutateBody` function:
 
 ```javascript
-import { hashBody } from "amz-content-sha256-fetch";
+import { sha256 } from "amz-content-sha256-fetch";
 
-const hashedBody = hashBody(body)
+const hashedBody = await mutateBody(body)
 
 const headers = {
     ...otherHeaders,
@@ -89,3 +92,19 @@ const awsHashInterceptor = new ApolloLink((operation, forward) => {
       <App />   
     </ApolloProvider>
 );
+
+## File Uploads
+
+If you are uploading a file, you can do so with the following:
+
+```javascript
+const formData = new FormData();
+formData.append('file', currentFile);
+fetchSha256('https://mysite.com', {
+  method: 'POST',
+  body: formData,
+  credentials: 'include'
+})
+```
+
+This will generate the appropriate aws hash header.
