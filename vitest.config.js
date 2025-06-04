@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  test: {
-    exclude: ['node_modules', 'dist'],
-  },
-})
+	test: {
+		exclude: ["node_modules", "dist"],
+	},
+});

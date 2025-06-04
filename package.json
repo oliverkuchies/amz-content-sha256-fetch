@@ -1,41 +1,37 @@
 {
-  "name": "amz-content-sha256-fetch",
-  "version": "1.0.8",
-  "description": "Utilise amz-content-sha256 header automatically inferred from content in fetch",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "test": "vitest",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc",
-    "prepare": "npm run lint && npm run typecheck && npm run build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/oliverkuchies/amz-content-sha256-fetch.git"
-  },
-  "keywords": [
-    "aws",
-    "sha256",
-    "aws-content-sha256"
-  ],
-  "author": "Oliver Kucharzewski",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/oliverkuchies/amz-content-sha256-fetch/issues"
-  },
-  "homepage": "https://github.com/oliverkuchies/amz-content-sha256-fetch#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.22.0",
-    "eslint": "^9.22.0",
-    "globals": "^16.0.0",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.1",
-    "vitest": "^3.0.8"
-  },
-  "dependencies": {
-    "js-sha256": "^0.11.0",
-    "vitest-fetch-mock": "^0.4.5"
-  }
+	"name": "amz-content-sha256-fetch",
+	"version": "1.0.9",
+	"description": "Utilise amz-content-sha256 header automatically inferred from content in fetch",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"test": "vitest",
+		"lint": "biome check ./src",
+		"lint:fix": "biome check ./src --fix --unsafe",
+		"typecheck": "tsc --noEmit",
+		"build": "tsc",
+		"prepare": "npm run lint && npm run typecheck && npm run build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/oliverkuchies/amz-content-sha256-fetch.git"
+	},
+	"keywords": ["aws", "sha256", "aws-content-sha256"],
+	"author": "Oliver Kucharzewski",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/oliverkuchies/amz-content-sha256-fetch/issues"
+	},
+	"homepage": "https://github.com/oliverkuchies/amz-content-sha256-fetch#readme",
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"globals": "^16.0.0",
+		"typescript": "^5.8.2",
+		"typescript-eslint": "^8.26.1",
+		"vitest": "^3.0.8"
+	},
+	"dependencies": {
+		"js-sha256": "^0.11.0",
+		"vitest-fetch-mock": "^0.4.5"
+	}
 }
